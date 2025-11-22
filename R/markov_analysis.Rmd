@@ -1,0 +1,253 @@
+---
+title: "Analisis Rantai Markov untuk Perpindahan Merek Laptop Mahasiswa"
+author: "Egi Str"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: cosmo
+    toc: true
+    toc_float: true
+    number_sections: true
+    fig_caption: true
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_caption: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = 'center')
+```
+
+# Pendahuluan
+
+Analisis Rantai Markov ini dilakukan berdasarkan data survei mahasiswa tentang perpindahan merek laptop. Metodologi yang digunakan mengikuti standar akademik dalam literatur probabilitas dan statistik, termasuk identifikasi ruang keadaan, konstruksi matriks transisi, analisis diagram transisi, perhitungan probabilitas langkah ke-n, distribusi stasioner, dan klasifikasi keadaan. Analisis ini bertujuan untuk memahami pola loyalitas merek laptop di kalangan mahasiswa dan memprediksi pangsa pasar jangka panjang.
+
+# Setup Environment
+
+```{r libraries}
+# Install packages if needed
+# install.packages(c("tidyverse", "markovchain", "igraph", "expm", "ggplot2", "reshape2"), repos = "https://cran.rstudio.com/")
+
+library(tidyverse)
+library(markovchain)
+library(igraph)
+library(expm)
+library(ggplot2)
+library(reshape2)
+```
+
+# Load dan Bersihkan Data
+
+```{r load_data}
+# Load data
+data <- read.csv("../data/datapemstok.csv", encoding = "latin1")
+
+# Select relevant columns
+data_clean <- data %>%
+  select(
+    first_brand = "Apa.merek.laptop.yang.pertama.kali.Anda.gunakan.saat.menjadi.mahasiswa",
+    still_same = "Apakah.saat.ini.Anda.masih.menggunakan.laptop.yang.sama.",
+    current_brand = "Apabila.Anda.sudah.pernah.berganti.laptop..apa.merek.laptop.Anda.saat.ini."
+  )
+
+# Handle logic: if still using same, current_brand = first_brand
+data_clean <- data_clean %>%
+  mutate(current_brand = ifelse(still_same == "Ya", first_brand, current_brand)) %>%
+  drop_na(first_brand, current_brand)
+
+print("Pratinjau data bersih:")
+head(data_clean)
+```
+
+# Identifikasi Ruang Keadaan
+
+Ruang keadaan terdiri dari merek laptop unik yang muncul dalam data.
+
+```{r states}
+# Identify state space
+states <- sort(unique(c(data_clean$first_brand, data_clean$current_brand)))
+state_index <- setNames(seq_along(states), states)
+
+print("Ruang Keadaan:")
+print(states)
+print(paste("Jumlah keadaan:", length(states)))
+```
+
+# Matriks Transisi
+
+Matriks transisi diperoleh dari frekuensi perpindahan dalam data empiris.
+
+```{r transition_matrix}
+# Create transition matrix
+trans_table <- table(data_clean$first_brand, data_clean$current_brand)
+transition_matrix <- prop.table(trans_table, 1)  # Normalize per row
+
+# Convert to data frame for visualization
+trans_df <- as.data.frame.matrix(transition_matrix)
+trans_df$From <- rownames(trans_df)
+trans_df <- melt(trans_df, id.vars = "From", variable.name = "To", value.name = "Probability")
+
+print("Matriks Transisi:")
+print(transition_matrix)
+
+# Heatmap visualization
+ggplot(trans_df, aes(x = To, y = From, fill = Probability)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  theme_minimal() +
+  labs(title = "Heatmap Matriks Transisi",
+       x = "Keadaan Tujuan",
+       y = "Keadaan Awal",
+       fill = "Probabilitas") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave("../output/transition_matrix_heatmap_R.png", width = 10, height = 8, dpi = 300)
+```
+
+# Diagram Transisi
+
+Diagram transisi menggunakan igraph untuk visualisasi graf.
+
+```{r transition_diagram}
+# Create graph
+g <- graph_from_adjacency_matrix(transition_matrix, mode = "directed", weighted = TRUE)
+
+# Set layout
+layout <- layout_in_circle(g)
+
+# Plot
+plot(g, layout = layout, 
+     vertex.color = "lightblue", 
+     vertex.size = 30,
+     edge.arrow.size = 0.5,
+     edge.width = E(g)$weight * 10,
+     main = "Diagram Transisi Rantai Markov")
+
+# Save plot
+png("../output/transition_diagram_R.png", width = 800, height = 600)
+plot(g, layout = layout, 
+     vertex.color = "lightblue", 
+     vertex.size = 30,
+     edge.arrow.size = 0.5,
+     edge.width = E(g)$weight * 10,
+     main = "Diagram Transisi Rantai Markov")
+dev.off()
+```
+
+# Probabilitas Langkah ke-n
+
+Hitung probabilitas setelah n langkah.
+
+```{r n_step}
+n_steps <- c(3, 5, 10)
+
+for (n in n_steps) {
+  P_n <- transition_matrix %^% n
+  P_n_df <- as.data.frame(P_n)
+  colnames(P_n_df) <- states
+  P_n_df$From <- states
+  
+  print(paste("Probabilitas setelah", n, "langkah:"))
+  print(P_n_df)
+  
+  # Visualization for Lenovo
+  if ("Lenovo" %in% states) {
+    lenovo_idx <- which(states == "Lenovo")
+    probs <- P_n[lenovo_idx, ]
+    
+    df_plot <- data.frame(State = states, Probability = probs)
+    
+    ggplot(df_plot, aes(x = State, y = Probability)) +
+      geom_bar(stat = "identity", fill = "cornflowerblue") +
+      theme_minimal() +
+      labs(title = paste("Probabilitas setelah", n, "langkah dari Lenovo"),
+           x = "Keadaan", y = "Probabilitas") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    
+    ggsave(paste0("../output/n_step_probabilities_", n, "_steps_R.png"), width = 8, height = 6, dpi = 300)
+  }
+}
+```
+
+# Distribusi Stasioner
+
+Distribusi stasioner menggunakan fungsi steadyStates dari markovchain.
+
+```{r steady_state}
+# Build Markov Chain object
+markov_model <- new("markovchain", states = states, byrow = TRUE,
+                    transitionMatrix = transition_matrix,
+                    name = "Laptop Brand Switching")
+
+steady_state <- steadyStates(markov_model)
+
+print("Distribusi Stasioner:")
+print(steady_state)
+
+# Visualization
+df_steady <- data.frame(State = states, Probability = as.numeric(steady_state))
+ggplot(df_steady, aes(x = State, y = Probability)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  theme_minimal() +
+  labs(title = "Distribusi Stasioner",
+       x = "Merek Laptop", y = "Probabilitas Stasioner") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave("../output/stationary_distribution_R.png", width = 10, height = 8, dpi = 300)
+```
+
+# Klasifikasi Ruang Keadaan
+
+Klasifikasi menggunakan fungsi dari markovchain.
+
+```{r classification}
+print("Kelas Komunikasi:")
+communicatingClasses(markov_model)
+
+print("Kelas Recurrent:")
+recurrentClasses(markov_model)
+
+print("Kelas Transient:")
+transientClasses(markov_model)
+
+# Absorbing states
+absorbing_states <- states[diag(transition_matrix) == 1 & rowSums(transition_matrix) == 1]
+print("Keadaan Penyerap:")
+print(absorbing_states)
+```
+
+# Simulasi
+
+Simulasi jalur menggunakan rmarkovchain.
+
+```{r simulation}
+set.seed(42)
+simulasi <- rmarkovchain(n = 15, object = markov_model, t0 = "Lenovo")
+print("Simulasi jalur dari Lenovo:")
+print(simulasi)
+```
+
+# Ekspor Hasil
+
+```{r export}
+# Export transition matrix
+write.csv(transition_matrix, "../output/transition_matrix_R.csv")
+
+# Export steady state
+write.csv(df_steady, "../output/stationary_distribution_R.csv", row.names = FALSE)
+
+# Export classification
+classification_df <- data.frame(
+  State = states,
+  Type = ifelse(states %in% absorbing_states, "Absorbing", 
+                ifelse(states %in% recurrentClasses(markov_model)[[1]], "Recurrent", "Transient"))
+)
+write.csv(classification_df, "../output/state_classification_R.csv", row.names = FALSE)
+
+print("Hasil diekspor ke direktori output.")
+```
+
+# Kesimpulan
+
+Analisis Rantai Markov ini memberikan wawasan tentang perpindahan merek laptop mahasiswa. Dengan menggunakan R dan R Markdown, analisis ini dapat direproduksi dan dipublikasikan dengan mudah.
