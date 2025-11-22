@@ -20,16 +20,16 @@ Proyek ini menyajikan analisis mendalam Rantai Markov berdasarkan data survei ma
 
 ## ✨ Fitur
 
-- ✅ Identifikasi ruang keadaan dari data survei
-- ✅ Konstruksi matriks transisi empiris
-- ✅ Visualisasi diagram transisi dengan NetworkX
-- ✅ Analisis probabilitas langkah ke-n
-- ✅ Perhitungan distribusi stasioner
-- ✅ Klasifikasi keadaan (absorbing, recurrent, transient)
-- ✅ Simulasi jalur Markov
-- ✅ Ekspor hasil ke CSV dan PNG
-- ✅ Notebook Jupyter interaktif
-- ✅ Dokumentasi akademik lengkap
+- Identifikasi ruang keadaan dari data survei
+- Konstruksi matriks transisi empiris
+- Visualisasi diagram transisi dengan NetworkX
+- Analisis probabilitas langkah ke-n
+- Perhitungan distribusi stasioner
+- Klasifikasi keadaan (absorbing, recurrent, transient)
+- Simulasi jalur Markov
+- Ekspor hasil ke CSV dan PNG
+- Notebook Jupyter interaktif
+- Dokumentasi akademik lengkap
 
 ## 🚀 Instalasi
 
@@ -198,11 +198,6 @@ Proyek ini dilisensikan di bawah [Lisensi MIT](LICENSE) - lihat file LICENSE unt
 4. Dokumentasi SciPy: https://docs.scipy.org/
 5. Dokumentasi NetworkX: https://networkx.org/
 
-## 👥 Kontak
-
-- **Penulis**: EgiStr
-- **Email**: egi@example.com
-- **GitHub**: [@EgiStr](https://github.com/EgiStr)
 
 ## 🙏 Ucapan Terima Kasih
 
