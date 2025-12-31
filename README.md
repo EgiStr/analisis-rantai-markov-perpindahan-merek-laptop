@@ -1,8 +1,11 @@
 # Analisis Rantai Markov untuk Perpindahan Merek Laptop Mahasiswa
 
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-orange.svg)](https://jupyter.org/)
+
+<img width="2245" height="3179" alt="PEMODELAN TRANSISI PREFERENSI MEREK MENGGUNAKAN RANTAI MARKOV" src="https://github.com/user-attachments/assets/3f422fc3-5dbe-4f43-9c08-7f8323e3fbdb" />
 
 Proyek ini menyajikan analisis mendalam Rantai Markov berdasarkan data survei mahasiswa tentang perpindahan merek laptop. Menggunakan metodologi standar dalam literatur akademik untuk memodelkan perilaku konsumen dan memprediksi pangsa pasar jangka panjang.
 
